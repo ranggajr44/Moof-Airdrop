@@ -6,6 +6,8 @@
     <title>MOOF Airdrop - Base Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -28,7 +30,6 @@
     </div>
 
     <div class="max-w-md mx-auto min-h-screen bg-slate-50 pb-28 relative shadow-2xl overflow-x-hidden">
-        
         <header class="p-4 flex justify-between items-center bg-white border-b sticky top-0 z-10 shadow-sm">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 bg-[#0052FF] rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
@@ -44,44 +45,39 @@
         <div id="main-content" class="p-5">
             <div id="earn" class="tab-content active space-y-6">
                 <div class="bg-gradient-to-br from-[#0052FF] to-blue-800 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
                     <p class="text-xs opacity-70 uppercase tracking-widest font-bold">Total $MOOF Balance</p>
                     <h2 class="text-5xl font-black my-4" id="totalPoints">0</h2>
                     <button onclick="claimDaily()" id="claimBtn" class="w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-50 transition active:scale-95">
                         CLAIM DAILY MOOF
                     </button>
+                    <p id="timerDisplay" class="text-center text-[10px] mt-2 font-bold opacity-0 transition-opacity">Next claim in: <span id="countdown">--:--:--</span></p>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-blue-50 flex items-center gap-4 shadow-sm">
-                    <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-fire"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 font-bold uppercase">Mining Streak</p>
-                        <p class="font-black">5 Days Active</p>
-                    </div>
+                    <div class="w-12 h-12 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center text-xl"><i class="fa-solid fa-fire"></i></div>
+                    <div><p class="text-xs text-gray-400 font-bold uppercase">Mining Status</p><p class="font-black text-green-500">System Connected</p></div>
                 </div>
             </div>
 
             <div id="tasks" class="tab-content space-y-4">
                 <h3 class="font-black text-2xl mb-2 px-2 italic uppercase tracking-tighter text-blue-600">MOOF Quests</h3>
-                <div onclick="doTask(this, 2000, 'https://x.com/MoofGuyBase')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
+                <div id="taskX" onclick="doTask('taskX', 2000, 'https://x.com/MoofGuyBase')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center"><i class="fa-brands fa-x-twitter"></i></div>
-                        <div><p class="font-bold text-sm">Follow MOOF X</p><p class="text-[10px] text-gray-400">Reward after check</p></div>
+                        <div><p class="font-bold text-sm">Follow MOOF X</p><p class="text-[10px] text-gray-400">One-time reward</p></div>
                     </div>
                     <span class="bg-blue-50 text-[#0052FF] font-black px-3 py-1 rounded-lg text-xs">+2,000 $MOOF</span>
                 </div>
-                <div onclick="doTask(this, 2000, 'https://www.youtube.com/@MOOFOFFICIAL')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
+                <div id="taskYT" onclick="doTask('taskYT', 2000, 'https://www.youtube.com/@MOOFOFFICIAL')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-red-600 text-white rounded-xl flex items-center justify-center"><i class="fa-brands fa-youtube"></i></div>
-                        <div><p class="font-bold text-sm">Join MOOF YouTube</p><p class="text-[10px] text-gray-400">Watch latest video</p></div>
+                        <div><p class="font-bold text-sm">Join MOOF YouTube</p><p class="text-[10px] text-gray-400">One-time reward</p></div>
                     </div>
                     <span class="bg-blue-50 text-[#0052FF] font-black px-3 py-1 rounded-lg text-xs">+2,000 $MOOF</span>
                 </div>
-                <div onclick="doTask(this, 2000, 'https://t.me/SI_MOOF_Official')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
+                <div id="taskTG" onclick="doTask('taskTG', 2000, 'https://t.me/SI_MOOF_Official')" class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm cursor-pointer hover:border-blue-500 transition-all">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-blue-500 text-white rounded-xl flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></div>
-                        <div><p class="font-bold text-sm">Join Telegram</p><p class="text-[10px] text-gray-400">Get latest info</p></div>
+                        <div><p class="font-bold text-sm">Join Telegram</p><p class="text-[10px] text-gray-400">One-time reward</p></div>
                     </div>
                     <span class="bg-blue-50 text-[#0052FF] font-black px-3 py-1 rounded-lg text-xs">+2,000 $MOOF</span>
                 </div>
@@ -89,27 +85,25 @@
 
             <div id="leaderboard" class="tab-content space-y-4">
                 <div class="flex flex-col items-center mb-6">
-                    <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-white text-3xl shadow-lg shadow-yellow-100">
-                        <i class="fa-solid fa-crown"></i>
-                    </div>
+                    <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-white text-3xl shadow-lg shadow-yellow-100"><i class="fa-solid fa-crown"></i></div>
                     <h3 class="font-black text-2xl italic uppercase tracking-tighter mt-2 text-blue-600">Top 100 Miners</h3>
                 </div>
                 <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                    <div class="max-h-[50vh] overflow-y-auto hide-scrollbar" id="leaderboardList"></div>
+                    <div class="max-h-[50vh] overflow-y-auto hide-scrollbar" id="leaderboardList">
+                        <p class="text-center p-10 text-gray-400 animate-pulse">Synchronizing Data...</p>
+                    </div>
                 </div>
             </div>
 
             <div id="referral" class="tab-content space-y-6">
                 <div class="text-center py-8">
-                    <div class="w-20 h-20 bg-blue-100 text-[#0052FF] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
+                    <div class="w-20 h-20 bg-blue-100 text-[#0052FF] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fa-solid fa-users"></i></div>
                     <h3 class="text-2xl font-black italic">Invite for $MOOF</h3>
                     <p class="text-gray-500 text-sm mt-2 px-8 font-medium italic underline decoration-blue-200">Get 10% from every friend's $MOOF claim.</p>
                 </div>
                 <div class="bg-white p-2 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-between">
-                    <span class="px-4 font-mono text-xs text-blue-600 font-bold truncate mr-2" id="refLinkDisplay">moofguy.drop/ref=...</span>
-                    <button onclick="copyRef()" class="bg-[#0052FF] text-white px-6 py-3 rounded-xl font-bold text-sm active:scale-95 transition">Copy</button>
+                    <span class="px-4 font-mono text-xs text-blue-600 font-bold truncate mr-2" id="refLinkDisplay">Connect wallet to get link</span>
+                    <button onclick="copyRef()" class="bg-[#0052FF] text-white px-6 py-3 rounded-xl font-bold text-sm">Copy</button>
                 </div>
             </div>
 
@@ -127,7 +121,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-50 p-4 rounded-2xl border border-gray-100">
                             <p class="text-[10px] font-bold text-gray-400 uppercase">User Rank</p>
-                            <p class="font-black text-lg" id="userRank">#9,999</p>
+                            <p class="font-black text-lg text-blue-600" id="userRank">#?,???</p>
                         </div>
                         <div class="bg-slate-50 p-4 rounded-2xl border border-gray-100">
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Referrals</p>
@@ -141,166 +135,181 @@
 
         <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto border glass-nav flex justify-around py-3 rounded-[2rem] shadow-2xl z-20">
             <button onclick="switchTab('earn', this)" class="nav-item flex flex-col items-center text-[#0052FF] px-2">
-                <i class="fa-solid fa-house-chimney text-lg"></i>
-                <span class="text-[9px] font-black mt-1 uppercase tracking-tighter">Earn</span>
+                <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Earn</span>
             </button>
             <button onclick="switchTab('tasks', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-list-check text-lg"></i>
-                <span class="text-[9px] font-black mt-1 uppercase tracking-tighter">Tasks</span>
+                <i class="fa-solid fa-list-check text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Tasks</span>
             </button>
             <button onclick="switchTab('leaderboard', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-trophy text-lg"></i>
-                <span class="text-[9px] font-black mt-1 uppercase tracking-tighter">Top</span>
+                <i class="fa-solid fa-trophy text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Top</span>
             </button>
             <button onclick="switchTab('referral', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-user-group text-lg"></i>
-                <span class="text-[9px] font-black mt-1 uppercase tracking-tighter">Ref</span>
+                <i class="fa-solid fa-user-group text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Ref</span>
             </button>
             <button onclick="switchTab('profile', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-circle-user text-lg"></i>
-                <span class="text-[9px] font-black mt-1 uppercase tracking-tighter">User</span>
+                <i class="fa-solid fa-circle-user text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">User</span>
             </button>
         </nav>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script>
-        let currentPoints = parseInt(localStorage.getItem('moof_points')) || 0;
+        // --- FIREBASE SETUP ---
+        const firebaseConfig = {
+            databaseURL: "https://moof-airdrop-database-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let walletAddress = localStorage.getItem('moof_wallet') || "";
-        let referrals = parseInt(localStorage.getItem('moof_refs')) || 0;
+        let currentPoints = 0;
 
-        function forceHideLoader() {
-            const loader = document.getElementById('loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 500);
-            }
-            updateUI();
-            checkClaimStatus();
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', forceHideLoader);
-        } else {
-            forceHideLoader();
-        }
-        setTimeout(forceHideLoader, 3000);
-
+        // --- AUTH & DATA SYNC ---
         function updateUI() {
-            if(document.getElementById('totalPoints')) document.getElementById('totalPoints').innerText = currentPoints.toLocaleString();
-            if(document.getElementById('refCount')) document.getElementById('refCount').innerText = referrals + " Miners";
-            let rank = 10000 - Math.floor(currentPoints / 2);
-            if(rank < 1) rank = 1;
-            if(document.getElementById('userRank')) document.getElementById('userRank').innerText = "#" + rank.toLocaleString();
-            
+            document.getElementById('totalPoints').innerText = currentPoints.toLocaleString();
             if (walletAddress) {
                 const displayAddr = walletAddress.substring(0, 6) + "..." + walletAddress.substring(walletAddress.length - 4);
                 const btn = document.getElementById('connectBtn');
-                if(btn) {
-                    btn.innerHTML = displayAddr + ' (Base)';
-                    btn.className = 'bg-green-100 text-green-600 px-5 py-2 rounded-full text-xs font-bold border border-green-200';
-                }
-                if(document.getElementById('userName')) document.getElementById('userName').innerText = "User " + walletAddress.substring(2, 6);
-                if(document.getElementById('userPfp')) document.getElementById('userPfp').src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${walletAddress}`;
-                if(document.getElementById('refLinkDisplay')) document.getElementById('refLinkDisplay').innerText = "moofguy.drop/ref=" + walletAddress.substring(0, 10);
-            }
-        }
+                btn.innerHTML = displayAddr + ' (Base)';
+                btn.className = 'bg-green-100 text-green-600 px-5 py-2 rounded-full text-xs font-bold border border-green-200';
+                document.getElementById('userName').innerText = "Miner " + walletAddress.substring(2, 6);
+                document.getElementById('userPfp').src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${walletAddress}`;
+                document.getElementById('refLinkDisplay').innerText = "moofguy.drop/ref=" + walletAddress.substring(0, 10);
+                
+                // Hitung Rank Sederhana (Contoh: Semakin besar saldo, rank semakin kecil)
+                let rankVal = 10000 - Math.floor(currentPoints / 10);
+                if(rankVal < 1) rankVal = 1;
+                document.getElementById('userRank').innerText = "#" + rankVal.toLocaleString();
+                document.getElementById('refCount').innerText = "0 Miners";
 
-        function generateLeaderboard() {
-            const list = document.getElementById('leaderboardList');
-            if(!list) return;
-            list.innerHTML = '';
-            for(let i = 1; i <= 100; i++) {
-                let p = 100000 - (i * 850);
-                let addr = `0x${Math.random().toString(16).slice(2, 6)}...${Math.random().toString(16).slice(2, 6)}`;
-                const item = document.createElement('div');
-                item.className = `flex justify-between items-center p-4 border-b last:border-0 ${i <= 3 ? 'bg-blue-50/50' : ''}`;
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="font-black text-xs w-6 ${i==1?'text-yellow-500': i==2?'text-slate-400': i==3?'text-orange-400':'text-gray-400'}">#${i}</span>
-                        <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=${addr}" class="w-8 h-8 rounded-full bg-slate-100">
-                        <span class="font-bold text-xs font-mono">${addr}</span>
-                    </div>
-                    <span class="font-black text-blue-600 text-xs">${p.toLocaleString()} $MOOF</span>
-                `;
-                list.appendChild(item);
+                // Sembunyikan task yang sudah selesai
+                ['taskX', 'taskYT', 'taskTG'].forEach(t => {
+                    if(localStorage.getItem('done_' + t)) document.getElementById(t).style.display = 'none';
+                });
             }
-        }
-
-        function switchTab(tabId, el) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('text-[#0052FF]');
-                item.classList.add('text-slate-400');
-            });
-            el.classList.add('text-[#0052FF]');
-            el.classList.remove('text-slate-400');
-            if(tabId === 'leaderboard') generateLeaderboard();
         }
 
         async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
+            if (window.ethereum) {
                 try {
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     walletAddress = accounts[0];
                     localStorage.setItem('moof_wallet', walletAddress);
-                    updateUI();
-                } catch (error) {
-                    alert('Gagal menyambung wallet.');
-                }
-            } else {
-                alert('Wallet tidak ditemukan! Gunakan Browser MetaMask/OKX/Trust.');
-            }
+                    syncFromDB();
+                } catch (e) { alert('Connection failed'); }
+            } else { alert('Please use Web3 Browser!'); }
         }
 
-        // PERBAIKAN: Sekarang claim memberikan 1.000 $MOOF
+        function syncFromDB() {
+            if(!walletAddress) return;
+            db.ref('users/' + walletAddress).on('value', (snap) => {
+                const data = snap.val();
+                if(data) {
+                    currentPoints = data.balance || 0;
+                } else {
+                    db.ref('users/' + walletAddress).set({ balance: 0, username: walletAddress.substring(0,6) });
+                }
+                updateUI();
+                checkClaimStatus();
+            });
+        }
+
+        // --- CORE FEATURES ---
         function claimDaily() {
             if (!walletAddress) { alert('Connect Wallet First!'); return; }
-            currentPoints += 1000; // Berubah dari 100 ke 1000
-            localStorage.setItem('moof_points', currentPoints);
-            localStorage.setItem('lastClaimTime', new Date().getTime());
-            updateUI();
+            const now = new Date().getTime();
+            currentPoints += 1000;
+            db.ref('users/' + walletAddress).update({ balance: currentPoints, lastClaim: now });
+            localStorage.setItem('lastClaimTime', now);
             checkClaimStatus();
         }
 
         function checkClaimStatus() {
-            const lastClaim = localStorage.getItem('lastClaimTime');
             const btn = document.getElementById('claimBtn');
-            if (lastClaim && btn) {
-                const now = new Date().getTime();
-                const diff = now - lastClaim;
-                const hours24 = 24 * 60 * 60 * 1000;
-                if (diff < hours24) {
-                    btn.disabled = true;
-                    btn.innerText = "Selesai Claim";
-                    btn.className = 'w-full bg-blue-100 text-blue-400 py-4 rounded-2xl font-black text-lg cursor-not-allowed';
+            const timerDiv = document.getElementById('timerDisplay');
+            if(!walletAddress) return;
+            db.ref('users/' + walletAddress + '/lastClaim').once('value', (snap) => {
+                const lastClaim = snap.val();
+                if (lastClaim) {
+                    const now = new Date().getTime();
+                    const diff = now - lastClaim;
+                    const hours24 = 24 * 60 * 60 * 1000;
+                    if (diff < hours24) {
+                        btn.disabled = true;
+                        btn.innerText = "COOLDOWN";
+                        btn.className = 'w-full bg-blue-100 text-blue-400 py-4 rounded-2xl font-black text-lg cursor-not-allowed';
+                        timerDiv.classList.remove('opacity-0');
+                        startTimer(hours24 - diff);
+                    } else {
+                        btn.disabled = false;
+                        btn.innerText = "CLAIM DAILY MOOF";
+                        btn.className = 'w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-50';
+                        timerDiv.classList.add('opacity-0');
+                    }
                 }
-            }
+            });
         }
 
-        function doTask(el, reward, link) {
+        function startTimer(duration) {
+            const display = document.getElementById('countdown');
+            let timer = duration / 1000;
+            const interval = setInterval(() => {
+                let hours = Math.floor(timer / 3600);
+                let minutes = Math.floor((timer % 3600) / 60);
+                let seconds = Math.floor(timer % 60);
+                display.innerText = `${hours}h ${minutes}m ${seconds}s`;
+                if (--timer < 0) { clearInterval(interval); checkClaimStatus(); }
+            }, 1000);
+        }
+
+        function doTask(taskId, reward, link) {
             if (!walletAddress) { alert('Connect Wallet First!'); return; }
             window.open(link, '_blank');
             setTimeout(() => {
-                el.style.opacity = "0.5";
-                el.style.pointerEvents = "none";
                 currentPoints += reward;
-                localStorage.setItem('moof_points', currentPoints);
+                db.ref('users/' + walletAddress).update({ balance: currentPoints });
+                localStorage.setItem('done_' + taskId, true);
+                document.getElementById(taskId).style.display = 'none';
                 updateUI();
-            }, 3000);
+            }, 5000);
         }
 
-        function copyRef() {
-            if (!walletAddress) { alert('Connect Wallet First!'); return; }
-            navigator.clipboard.writeText("moofguy.drop/ref=" + walletAddress.substring(0,10));
-            alert('Link Copied!');
+        // --- LEADERBOARD & NAV ---
+        function generateLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            db.ref('users').orderByChild('balance').limitToLast(100).on('value', snap => {
+                list.innerHTML = '';
+                let players = [];
+                snap.forEach(child => { players.push(child.val()); });
+                players.reverse().forEach((p, i) => {
+                    list.innerHTML += `
+                        <div class="flex justify-between items-center p-4 border-b ${i<3?'bg-blue-50/50':''}">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-xs w-6">#${i+1}</span>
+                                <span class="font-bold text-xs font-mono">${p.username}...</span>
+                            </div>
+                            <span class="font-black text-blue-600 text-xs">${p.balance.toLocaleString()} $MOOF</span>
+                        </div>`;
+                });
+            });
         }
 
-        function disconnectWallet() {
-            localStorage.clear();
-            location.reload();
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('text-[#0052FF]'); n.classList.add('text-slate-400'); });
+            el.classList.add('text-[#0052FF]');
+            if(tabId === 'leaderboard') generateLeaderboard();
         }
+
+        function copyRef() { if(walletAddress) { navigator.clipboard.writeText("moofguy.drop/ref=" + walletAddress.substring(0,10)); alert('Link Copied!'); } }
+        function disconnectWallet() { localStorage.clear(); location.reload(); }
+        
+        // Init
+        setTimeout(() => { 
+            const loader = document.getElementById('loader');
+            if(loader) loader.style.display='none'; 
+        }, 2000);
+        if(walletAddress) syncFromDB();
     </script>
 </body>
 </html>
