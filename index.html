@@ -137,21 +137,11 @@
         </div>
 
         <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto border glass-nav flex justify-around py-3 rounded-[2rem] shadow-2xl z-20">
-            <button onclick="switchTab('earn', this)" class="nav-item flex flex-col items-center text-[#0052FF] px-2">
-                <i class="fa-solid fa-house-chimney"></i><span class="text-[9px] font-black mt-1 uppercase">Earn</span>
-            </button>
-            <button onclick="switchTab('tasks', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-list-check"></i><span class="text-[9px] font-black mt-1 uppercase">Tasks</span>
-            </button>
-            <button onclick="switchTab('leaderboard', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-trophy"></i><span class="text-[9px] font-black mt-1 uppercase">Top</span>
-            </button>
-            <button onclick="switchTab('referral', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-user-group"></i><span class="text-[9px] font-black mt-1 uppercase">Ref</span>
-            </button>
-            <button onclick="switchTab('profile', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-circle-user"></i><span class="text-[9px] font-black mt-1 uppercase">User</span>
-            </button>
+            <button onclick="switchTab('earn', this)" class="nav-item flex flex-col items-center text-[#0052FF] px-2"><i class="fa-solid fa-house-chimney"></i><span class="text-[9px] font-black mt-1 uppercase">Earn</span></button>
+            <button onclick="switchTab('tasks', this)" class="nav-item flex flex-col items-center text-slate-400 px-2"><i class="fa-solid fa-list-check"></i><span class="text-[9px] font-black mt-1 uppercase">Tasks</span></button>
+            <button onclick="switchTab('leaderboard', this)" class="nav-item flex flex-col items-center text-slate-400 px-2"><i class="fa-solid fa-trophy"></i><span class="text-[9px] font-black mt-1 uppercase">Top</span></button>
+            <button onclick="switchTab('referral', this)" class="nav-item flex flex-col items-center text-slate-400 px-2"><i class="fa-solid fa-user-group"></i><span class="text-[9px] font-black mt-1 uppercase">Ref</span></button>
+            <button onclick="switchTab('profile', this)" class="nav-item flex flex-col items-center text-slate-400 px-2"><i class="fa-solid fa-circle-user"></i><span class="text-[9px] font-black mt-1 uppercase">User</span></button>
         </nav>
     </div>
 
@@ -162,6 +152,7 @@
 
         let walletAddress = localStorage.getItem('moof_wallet') || "";
         let currentPoints = 0;
+        let lastClaimTime = 0;
 
         function updateUI() {
             document.getElementById('totalPoints').innerText = currentPoints.toLocaleString();
@@ -171,21 +162,24 @@
                 document.getElementById('userName').innerText = "Miner " + walletAddress.substring(2, 6);
                 document.getElementById('userPfp').src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${walletAddress}`;
                 document.getElementById('refLinkDisplay').innerText = window.location.origin + window.location.pathname + "?ref=" + walletAddress;
-                
-                // Sembunyikan task yang sudah kelar
                 ['taskX', 'taskYT', 'taskTG'].forEach(t => {
-                    if(localStorage.getItem('done_' + t)) document.getElementById(t).style.display = 'none';
+                    if(localStorage.getItem('done_' + t)) {
+                        const el = document.getElementById(t);
+                        if(el) el.style.display = 'none';
+                    }
                 });
             }
         }
 
         async function connectWallet() {
             if (window.ethereum) {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                walletAddress = accounts[0];
-                localStorage.setItem('moof_wallet', walletAddress);
-                syncFromDB();
-            } else { alert('Gunakan MetaMask/TrustWallet!'); }
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    walletAddress = accounts[0];
+                    localStorage.setItem('moof_wallet', walletAddress);
+                    syncFromDB();
+                } catch (e) { alert("User rejected connection"); }
+            } else { alert('Buka lewat Browser MetaMask/TrustWallet!'); }
         }
 
         function syncFromDB() {
@@ -194,12 +188,13 @@
                 const data = snap.val();
                 if(data) {
                     currentPoints = data.balance || 0;
+                    lastClaimTime = data.lastClaim || 0;
                     document.getElementById('refCount').innerText = (data.referralCount || 0) + " Miners";
-                    checkClaimStatus(data.lastClaim);
+                    checkClaimStatus(lastClaimTime);
                 } else {
                     const urlParams = new URLSearchParams(window.location.search);
                     const refBy = urlParams.get('ref');
-                    db.ref('users/' + walletAddress).set({ balance: 0, username: walletAddress.substring(0,6), invitedBy: (refBy && refBy !== walletAddress) ? refBy : "none" });
+                    db.ref('users/' + walletAddress).set({ balance: 0, username: walletAddress.substring(0,6), lastClaim: 0, invitedBy: (refBy && refBy !== walletAddress) ? refBy : "none" });
                 }
                 updateUI();
             });
@@ -208,26 +203,65 @@
         function claimDaily() {
             if (!walletAddress) { alert('Connect Wallet!'); return; }
             const now = new Date().getTime();
+            const hours24 = 24 * 60 * 60 * 1000;
+
+            if (now - lastClaimTime < hours24) {
+                alert("Belum waktunya claim!");
+                return;
+            }
+
             currentPoints += 1000;
-            db.ref('users/' + walletAddress).update({ balance: currentPoints, lastClaim: now });
+            db.ref('users/' + walletAddress).update({ 
+                balance: currentPoints, 
+                lastClaim: now 
+            }).then(() => {
+                alert("Claim Berhasil +1,000 $MOOF!");
+            });
         }
 
         function checkClaimStatus(lastClaim) {
             const btn = document.getElementById('claimBtn');
             const timerDiv = document.getElementById('timerDisplay');
-            if (!lastClaim) return;
-            const diff = new Date().getTime() - lastClaim;
+            if (!lastClaim) {
+                btn.disabled = false;
+                btn.innerText = "CLAIM DAILY MOOF";
+                btn.className = 'w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl';
+                timerDiv.classList.add('opacity-0');
+                return;
+            }
+            const now = new Date().getTime();
+            const diff = now - lastClaim;
             const hours24 = 24 * 60 * 60 * 1000;
+
             if (diff < hours24) {
-                btn.disabled = true; btn.innerText = "COOLDOWN";
+                btn.disabled = true;
+                btn.innerText = "COOLDOWN";
                 btn.className = 'w-full bg-blue-100 text-blue-400 py-4 rounded-2xl font-black text-lg';
                 timerDiv.classList.remove('opacity-0');
             } else {
-                btn.disabled = false; btn.innerText = "CLAIM DAILY MOOF";
+                btn.disabled = false;
+                btn.innerText = "CLAIM DAILY MOOF";
                 btn.className = 'w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl';
                 timerDiv.classList.add('opacity-0');
             }
         }
+
+        setInterval(() => {
+            if (!walletAddress || !lastClaimTime) return;
+            const now = new Date().getTime();
+            const hours24 = 24 * 60 * 60 * 1000;
+            const remaining = (lastClaimTime + hours24) - now;
+
+            if (remaining > 0) {
+                const h = Math.floor(remaining / 3600000);
+                const m = Math.floor((remaining % 3600000) / 60000);
+                const s = Math.floor((remaining % 60000) / 1000);
+                document.getElementById('countdown').innerText = 
+                    `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            } else {
+                checkClaimStatus(0);
+            }
+        }, 1000);
 
         function doTask(taskId, reward, link) {
             if (!walletAddress) return alert('Connect Wallet!');
@@ -258,8 +292,10 @@
         }
 
         function copyRef() {
-            navigator.clipboard.writeText(document.getElementById('refLinkDisplay').innerText);
-            alert('Copied!');
+            const link = document.getElementById('refLinkDisplay').innerText;
+            if(link.includes("Connect wallet")) return alert("Koneksikan wallet dulu!");
+            navigator.clipboard.writeText(link);
+            alert('Link Referral Berhasil Dicopy!');
         }
 
         function disconnectWallet() { localStorage.clear(); location.reload(); }
