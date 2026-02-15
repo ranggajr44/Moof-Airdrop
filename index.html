@@ -35,7 +35,10 @@
                 <div class="w-8 h-8 bg-[#0052FF] rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
                     <span class="text-white font-bold text-xs italic">M</span>
                 </div>
-                <span class="font-extrabold text-xl italic tracking-tighter text-[#0052FF]">MOOFGUY</span>
+                <div class="flex flex-col -space-y-1">
+                    <span class="font-extrabold text-xl italic tracking-tighter text-[#0052FF]">MOOFGUY</span>
+                    <span class="text-[10px] font-bold text-blue-400 tracking-widest uppercase ml-0.5">BETA</span>
+                </div>
             </div>
             <button onclick="connectWallet()" id="connectBtn" class="bg-[#0052FF] text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg shadow-blue-200 active:scale-95 transition-all">
                 Connect Wallet
@@ -85,12 +88,12 @@
 
             <div id="leaderboard" class="tab-content space-y-4">
                 <div class="flex flex-col items-center mb-6">
-                    <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-white text-3xl shadow-lg shadow-yellow-100"><i class="fa-solid fa-crown"></i></div>
-                    <h3 class="font-black text-2xl italic uppercase tracking-tighter mt-2 text-blue-600">Top 100 Miners</h3>
+                    <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-white text-3xl shadow-lg"><i class="fa-solid fa-crown"></i></div>
+                    <h3 class="font-black text-2xl italic uppercase mt-2 text-blue-600">Top 100 Miners</h3>
                 </div>
                 <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
                     <div class="max-h-[50vh] overflow-y-auto hide-scrollbar" id="leaderboardList">
-                        <p class="text-center p-10 text-gray-400 animate-pulse">Synchronizing Data...</p>
+                        <p class="text-center p-10 text-gray-400">Loading Rankings...</p>
                     </div>
                 </div>
             </div>
@@ -135,28 +138,25 @@
 
         <nav class="fixed bottom-4 left-4 right-4 max-w-md mx-auto border glass-nav flex justify-around py-3 rounded-[2rem] shadow-2xl z-20">
             <button onclick="switchTab('earn', this)" class="nav-item flex flex-col items-center text-[#0052FF] px-2">
-                <i class="fa-solid fa-house-chimney text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Earn</span>
+                <i class="fa-solid fa-house-chimney"></i><span class="text-[9px] font-black mt-1 uppercase">Earn</span>
             </button>
             <button onclick="switchTab('tasks', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-list-check text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Tasks</span>
+                <i class="fa-solid fa-list-check"></i><span class="text-[9px] font-black mt-1 uppercase">Tasks</span>
             </button>
             <button onclick="switchTab('leaderboard', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-trophy text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Top</span>
+                <i class="fa-solid fa-trophy"></i><span class="text-[9px] font-black mt-1 uppercase">Top</span>
             </button>
             <button onclick="switchTab('referral', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-user-group text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">Ref</span>
+                <i class="fa-solid fa-user-group"></i><span class="text-[9px] font-black mt-1 uppercase">Ref</span>
             </button>
             <button onclick="switchTab('profile', this)" class="nav-item flex flex-col items-center text-slate-400 px-2">
-                <i class="fa-solid fa-circle-user text-lg"></i><span class="text-[9px] font-black mt-1 uppercase">User</span>
+                <i class="fa-solid fa-circle-user"></i><span class="text-[9px] font-black mt-1 uppercase">User</span>
             </button>
         </nav>
     </div>
 
     <script>
-        // FIREBASE CONFIG (Tanda : sudah saya hapus agar tidak error)
-        const firebaseConfig = {
-            databaseURL: "https://moof-airdrop-database-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        };
+        const firebaseConfig = { databaseURL: "https://moof-airdrop-database-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -167,130 +167,106 @@
             document.getElementById('totalPoints').innerText = currentPoints.toLocaleString();
             if (walletAddress) {
                 const displayAddr = walletAddress.substring(0, 6) + "..." + walletAddress.substring(walletAddress.length - 4);
-                const btn = document.getElementById('connectBtn');
-                btn.innerHTML = displayAddr + ' (Base)';
-                btn.className = 'bg-green-100 text-green-600 px-5 py-2 rounded-full text-xs font-bold border border-green-200';
+                document.getElementById('connectBtn').innerText = displayAddr;
                 document.getElementById('userName').innerText = "Miner " + walletAddress.substring(2, 6);
                 document.getElementById('userPfp').src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${walletAddress}`;
-                const myLink = window.location.origin + window.location.pathname + "?ref=" + walletAddress;
-                document.getElementById('refLinkDisplay').innerText = myLink;
-                let rankVal = 10000 - Math.floor(currentPoints / 10);
-                if(rankVal < 1) rankVal = 1;
-                document.getElementById('userRank').innerText = "#" + rankVal.toLocaleString();
+                document.getElementById('refLinkDisplay').innerText = window.location.origin + window.location.pathname + "?ref=" + walletAddress;
+                
+                // Sembunyikan task yang sudah kelar
+                ['taskX', 'taskYT', 'taskTG'].forEach(t => {
+                    if(localStorage.getItem('done_' + t)) document.getElementById(t).style.display = 'none';
+                });
             }
         }
 
         async function connectWallet() {
             if (window.ethereum) {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    walletAddress = accounts[0];
-                    localStorage.setItem('moof_wallet', walletAddress);
-                    syncFromDB();
-                } catch (e) { alert('Connection failed'); }
-            } else { alert('Please use Metamask/Trust Wallet!'); }
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                walletAddress = accounts[0];
+                localStorage.setItem('moof_wallet', walletAddress);
+                syncFromDB();
+            } else { alert('Gunakan MetaMask/TrustWallet!'); }
         }
 
         function syncFromDB() {
             if(!walletAddress) return;
-            const urlParams = new URLSearchParams(window.location.search);
-            const refBy = urlParams.get('ref');
             db.ref('users/' + walletAddress).on('value', (snap) => {
                 const data = snap.val();
                 if(data) {
                     currentPoints = data.balance || 0;
                     document.getElementById('refCount').innerText = (data.referralCount || 0) + " Miners";
+                    checkClaimStatus(data.lastClaim);
                 } else {
-                    db.ref('users/' + walletAddress).set({ 
-                        balance: 0, 
-                        username: walletAddress.substring(0,6),
-                        invitedBy: (refBy && refBy !== walletAddress) ? refBy : "none"
-                    });
-                    if(refBy && refBy !== walletAddress) {
-                        db.ref('users/' + refBy + '/referralCount').transaction(c => (c || 0) + 1);
-                    }
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const refBy = urlParams.get('ref');
+                    db.ref('users/' + walletAddress).set({ balance: 0, username: walletAddress.substring(0,6), invitedBy: (refBy && refBy !== walletAddress) ? refBy : "none" });
                 }
                 updateUI();
-                checkClaimStatus();
             });
         }
 
         function claimDaily() {
-            if (!walletAddress) { alert('Connect Wallet First!'); return; }
+            if (!walletAddress) { alert('Connect Wallet!'); return; }
             const now = new Date().getTime();
             currentPoints += 1000;
             db.ref('users/' + walletAddress).update({ balance: currentPoints, lastClaim: now });
         }
 
-        function checkClaimStatus() {
+        function checkClaimStatus(lastClaim) {
             const btn = document.getElementById('claimBtn');
             const timerDiv = document.getElementById('timerDisplay');
-            db.ref('users/' + walletAddress + '/lastClaim').on('value', (snap) => {
-                const lastClaim = snap.val();
-                if (lastClaim) {
-                    const now = new Date().getTime();
-                    const diff = now - lastClaim;
-                    const hours24 = 24 * 60 * 60 * 1000;
-                    if (diff < hours24) {
-                        btn.disabled = true;
-                        btn.innerText = "COOLDOWN";
-                        btn.className = 'w-full bg-blue-100 text-blue-400 py-4 rounded-2xl font-black text-lg cursor-not-allowed';
-                        timerDiv.classList.remove('opacity-0');
-                    } else {
-                        btn.disabled = false;
-                        btn.innerText = "CLAIM DAILY MOOF";
-                        btn.className = 'w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl';
-                        timerDiv.classList.add('opacity-0');
-                    }
-                }
-            });
+            if (!lastClaim) return;
+            const diff = new Date().getTime() - lastClaim;
+            const hours24 = 24 * 60 * 60 * 1000;
+            if (diff < hours24) {
+                btn.disabled = true; btn.innerText = "COOLDOWN";
+                btn.className = 'w-full bg-blue-100 text-blue-400 py-4 rounded-2xl font-black text-lg';
+                timerDiv.classList.remove('opacity-0');
+            } else {
+                btn.disabled = false; btn.innerText = "CLAIM DAILY MOOF";
+                btn.className = 'w-full bg-white text-[#0052FF] py-4 rounded-2xl font-black text-lg shadow-xl';
+                timerDiv.classList.add('opacity-0');
+            }
         }
 
         function doTask(taskId, reward, link) {
-            if (!walletAddress) { alert('Connect Wallet!'); return; }
+            if (!walletAddress) return alert('Connect Wallet!');
             window.open(link, '_blank');
             setTimeout(() => {
                 currentPoints += reward;
                 db.ref('users/' + walletAddress).update({ balance: currentPoints });
                 localStorage.setItem('done_' + taskId, true);
-                document.getElementById(taskId).style.display = 'none';
                 updateUI();
-            }, 5000);
+            }, 3000);
         }
 
         function switchTab(tabId, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => { n.classList.remove('text-[#0052FF]'); n.classList.add('text-slate-400'); });
-            el.classList.add('text-[#0052FF]');
+            document.querySelectorAll('.nav-item').forEach(n => { n.classList.add('text-slate-400'); n.classList.remove('text-[#0052FF]'); });
+            el.classList.add('text-[#0052FF]'); el.classList.remove('text-slate-400');
             if(tabId === 'leaderboard') {
-                const list = document.getElementById('leaderboardList');
                 db.ref('users').orderByChild('balance').limitToLast(10).once('value', snap => {
+                    const list = document.getElementById('leaderboardList');
                     list.innerHTML = '';
-                    snap.forEach(child => {
-                        const p = child.val();
-                        list.innerHTML += `<div class="flex justify-between p-4 border-b"><span>${p.username}</span><b>${p.balance} $MOOF</b></div>`;
+                    snap.forEach(c => {
+                        const p = c.val();
+                        list.innerHTML += `<div class="flex justify-between p-4 border-b"><span>${p.username}</span><b>${p.balance.toLocaleString()} $MOOF</b></div>`;
                     });
                 });
             }
         }
 
         function copyRef() {
-            const link = document.getElementById('refLinkDisplay').innerText;
-            navigator.clipboard.writeText(link);
+            navigator.clipboard.writeText(document.getElementById('refLinkDisplay').innerText);
             alert('Copied!');
         }
 
         function disconnectWallet() { localStorage.clear(); location.reload(); }
 
-        // AUTO HIDE LOADER - PASTI MASUK
         window.onload = function() {
+            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1000);
             if(walletAddress) syncFromDB();
-            else updateUI();
-            
-            setTimeout(() => {
-                document.getElementById('loader').style.display = 'none';
-            }, 1500);
         };
     </script>
 </body>
