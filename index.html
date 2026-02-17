@@ -108,7 +108,8 @@
             <div class="glass p-8 text-center">
                 <div class="w-20 h-20 bg-white/5 rounded-full mx-auto flex items-center justify-center mb-4"><i class="fa-solid fa-user-astronaut text-3xl opacity-50"></i></div>
                 <h4 id="user-display" class="font-bold text-xl uppercase">Anonymous</h4>
-                <p id="addr-txt" class="text-[10px] opacity-30 font-mono">Disconnected</p>
+                <p id="addr-txt" class="text-[10px] opacity-30 font-mono mb-2">Disconnected</p>
+                <div id="rank-display" class="inline-block px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Your Rank: Loading...</div>
             </div>
             <div class="glass p-6 space-y-4">
                 <p class="text-[10px] font-bold uppercase opacity-40">Referral Link</p>
@@ -120,7 +121,7 @@
 
     <nav class="fixed bottom-0 left-0 right-0 h-24 flex justify-around items-center z-[100] glass rounded-t-[30px] border-t border-white/10 px-4">
         <button onclick="switchTab('home')" class="nav-btn nav-active flex flex-col items-center gap-2" id="btn-home"><i class="fa-solid fa-house-chimney text-xl"></i><span class="text-[9px] font-bold uppercase">Home</span></button>
-        <button onclick="switchTab('leaderboard')" class="nav-btn opacity-50 flex flex-col items-center gap-2" id="btn-leaderboard"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[9px] font-bold uppercase">Rank</span></button>
+        <button onclick="switchTab('leaderboard')" class="nav-btn opacity-50 flex flex-col items-center gap-2" id="btn-leaderboard"><i class="fa-solid fa-trophy text-xl"></i><span class="text-[9px] font-bold uppercase">Leaderboard</span></button>
         <button onclick="switchTab('tasks')" class="nav-btn opacity-50 flex flex-col items-center gap-2" id="btn-tasks"><i class="fa-solid fa-list-check text-xl"></i><span class="text-[9px] font-bold uppercase">Tasks</span></button>
         <button onclick="switchTab('account')" class="nav-btn opacity-50 flex flex-col items-center gap-2" id="btn-account"><i class="fa-solid fa-user-astronaut text-xl"></i><span class="text-[9px] font-bold uppercase">Account</span></button>
     </nav>
@@ -206,10 +207,21 @@
                 document.getElementById('addr-txt').innerText = state.addr;
                 document.getElementById('user-display').innerText = "USER";
                 document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
+                calculateMyRank();
             }
             state.tasks.forEach(id => {
                 const btn = document.getElementById('m-' + id);
                 if(btn) btn.innerHTML = '<i class="fa-solid fa-check text-cyan-400"></i>';
+            });
+        }
+
+        function calculateMyRank() {
+            db.ref('users').orderByChild('balance').once('value', (snap) => {
+                let allPlayers = [];
+                snap.forEach(s => { allPlayers.push({ addr: s.key, bal: s.val().balance }); });
+                allPlayers.sort((a,b) => b.bal - a.bal);
+                const myIdx = allPlayers.findIndex(p => p.addr === state.addr);
+                document.getElementById('rank-display').innerText = "Your Rank: #" + (myIdx + 1);
             });
         }
 
@@ -271,5 +283,4 @@
         window.onload = startApp;
     </script>
 </body>
-                                                                                                                                                                                                                                             </html>
-                                                                                                                                                                                                                                             
+</html>
