@@ -126,7 +126,7 @@
     </nav>
 
     <script>
-        // DATA FIREBASE LU (DARI SCREENSHOT 96253)
+        // DATA FIREBASE TETAP AMAN
         const firebaseConfig = {
             apiKey: "AIzaSyCB1opJ-J_A1ef6BucknOnWexeAiI3mj18",
             authDomain: "moof-airdrop-database.firebaseapp.com",
@@ -142,6 +142,10 @@
         const APP_KEY = "MOOF_ELITE_V2_FINAL";
         let state = JSON.parse(localStorage.getItem(APP_KEY)) || { bal: 0, claim: 0, addr: null, tasks: [] };
 
+        // DETEKSI PENGUNDANG DARI URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const refParent = urlParams.get('ref');
+
         function startApp() {
             updateUI();
             setInterval(handleTimer, 1000);
@@ -156,16 +160,31 @@
             if (window.ethereum) {
                 try {
                     const acc = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    state.addr = acc[0];
-                    db.ref('users/' + state.addr.toLowerCase()).once('value', (s) => {
+                    state.addr = acc[0].toLowerCase();
+                    db.ref('users/' + state.addr).once('value', (s) => {
                         if(s.exists()) { 
                             state.bal = s.val().balance || 0; 
                             state.tasks = s.val().tasks || []; 
+                        } else {
+                            // USER BARU: CEK APAKAH PAKAI LINK REF
+                            if(refParent && refParent.toLowerCase() !== state.addr) {
+                                giveBonusToReferrer(refParent.toLowerCase());
+                            }
                         }
                         updateUI(); syncToDB();
                     });
-                } catch(e) { console.log("User rejected"); }
+                } catch(e) { console.log("Rejected"); }
             } else { alert("Install Metamask!"); }
+        }
+
+        function giveBonusToReferrer(parent) {
+            const bonus = 500; // Bonus buat lu
+            db.ref('users/' + parent).once('value', (s) => {
+                if(s.exists()) {
+                    let oldBal = s.val().balance || 0;
+                    db.ref('users/' + parent).update({ balance: oldBal + bonus });
+                }
+            });
         }
 
         function claimDaily() {
@@ -176,7 +195,7 @@
 
         function syncToDB() {
             if(state.addr && db) {
-                db.ref('users/' + state.addr.toLowerCase()).update({
+                db.ref('users/' + state.addr).update({
                     address: state.addr, balance: state.bal, tasks: state.tasks, lastSeen: Date.now()
                 });
             }
@@ -188,6 +207,7 @@
             if(state.addr) {
                 document.getElementById('wallet-btn').innerText = state.addr.substring(0,6)+"...";
                 document.getElementById('addr-txt').innerText = state.addr;
+                document.getElementById('user-display').innerText = "USER";
                 document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
             }
             state.tasks.forEach(id => {
