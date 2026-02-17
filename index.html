@@ -199,16 +199,32 @@
             }
         }
 
+        // FUNGSI INI GUE UPGRADE BIAR SALDO SINKRON TERUS SAMA DATABASE
         function updateUI() {
-            localStorage.setItem(APP_KEY, JSON.stringify(state));
-            document.getElementById('balance-txt').innerText = state.bal.toLocaleString();
             if(state.addr) {
-                document.getElementById('wallet-btn').innerText = state.addr.substring(0,6)+"...";
-                document.getElementById('addr-txt').innerText = state.addr;
-                document.getElementById('user-display').innerText = "USER";
-                document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
-                calculateMyRank();
+                // Gunakan .on('value') biar kalau di Firebase berubah, di layar HP lu ikut berubah otomatis
+                db.ref('users/' + state.addr).on('value', (s) => {
+                    if(s.exists()) {
+                        state.bal = s.val().balance || 0;
+                        state.tasks = s.val().tasks || [];
+                        
+                        // Render data ke layar
+                        document.getElementById('balance-txt').innerText = state.bal.toLocaleString();
+                        document.getElementById('wallet-btn').innerText = state.addr.substring(0,6)+"...";
+                        document.getElementById('addr-txt').innerText = state.addr;
+                        document.getElementById('user-display').innerText = "USER";
+                        document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
+                        
+                        calculateMyRank();
+                        localStorage.setItem(APP_KEY, JSON.stringify(state));
+                    }
+                });
+            } else {
+                // Jika belum connect wallet, tampilkan saldo dari local storage dulu
+                document.getElementById('balance-txt').innerText = state.bal.toLocaleString();
             }
+
+            // Pastikan centang misi tetap muncul
             state.tasks.forEach(id => {
                 const btn = document.getElementById('m-' + id);
                 if(btn) btn.innerHTML = '<i class="fa-solid fa-check text-cyan-400"></i>';
