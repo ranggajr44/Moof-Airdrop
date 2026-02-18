@@ -19,7 +19,14 @@
         .btn-claim { background: #ffffff; color: #000000; font-weight: 700; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
         #loader { position: fixed; inset: 0; z-index: 10000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s; }
         .nav-active { color: var(--accent) !important; text-shadow: 0 0 10px var(--accent); }
-        .hidden { display: none !important; }
+        
+        /* --- ANIMASI PELAN & SMOOTH --- */
+        .tab-content { 
+            transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        .hidden { display: none !important; opacity: 0; transform: translateY(15px); }
+        .fade-active { opacity: 1 !important; transform: translateY(0) !important; }
+
         .pump-tag { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     </style>
@@ -46,7 +53,7 @@
     </header>
 
     <main class="p-4 max-w-md mx-auto">
-        <section id="tab-home" class="tab-content space-y-8">
+        <section id="tab-home" class="tab-content fade-active space-y-8">
             <div class="text-center py-10">
                 <div class="pump-tag text-[9px] text-cyan-400 font-bold tracking-widest mb-2 uppercase">● Network Online</div>
                 <p class="text-[10px] opacity-40 font-bold tracking-[0.2em] uppercase">Total Balance</p>
@@ -74,6 +81,15 @@
 
         <section id="tab-tasks" class="tab-content hidden space-y-4">
             <h3 class="text-2xl font-bold mb-6">Missions</h3>
+            
+            <div class="glass p-5 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white"><i class="fa-brands fa-x-twitter text-2xl"></i></div>
+                    <div><p class="font-bold">RT, Like & Comment</p><p class="text-xs text-cyan-400">+1,000 $MOOF</p></div>
+                </div>
+                <button id="m-xrt" onclick="doMission('https://x.com/i/status/2023423284822581737', 'xrt')" class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center"><i class="fa-solid fa-arrow-right text-xs"></i></button>
+            </div>
+
             <div class="glass p-5 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400"><i class="fa-brands fa-telegram text-2xl"></i></div>
@@ -145,6 +161,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const refParent = urlParams.get('ref');
 
+        function triggerHaptic() {
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(30); 
+            }
+        }
+
         function startApp() {
             updateUI();
             setInterval(handleTimer, 1000);
@@ -157,6 +179,7 @@
 
         async function connectWallet() {
             if (window.ethereum) {
+                triggerHaptic();
                 try {
                     const acc = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     state.addr = acc[0].toLowerCase();
@@ -187,6 +210,7 @@
 
         function claimDaily() {
             if(!state.addr) return alert("Connect Wallet!");
+            triggerHaptic();
             state.bal += 1000; state.claim = Date.now();
             updateUI(); syncToDB();
         }
@@ -199,32 +223,24 @@
             }
         }
 
-        // FUNGSI INI GUE UPGRADE BIAR SALDO SINKRON TERUS SAMA DATABASE
         function updateUI() {
             if(state.addr) {
-                // Gunakan .on('value') biar kalau di Firebase berubah, di layar HP lu ikut berubah otomatis
                 db.ref('users/' + state.addr).on('value', (s) => {
                     if(s.exists()) {
                         state.bal = s.val().balance || 0;
                         state.tasks = s.val().tasks || [];
-                        
-                        // Render data ke layar
                         document.getElementById('balance-txt').innerText = state.bal.toLocaleString();
                         document.getElementById('wallet-btn').innerText = state.addr.substring(0,6)+"...";
                         document.getElementById('addr-txt').innerText = state.addr;
                         document.getElementById('user-display').innerText = "USER";
                         document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
-                        
                         calculateMyRank();
                         localStorage.setItem(APP_KEY, JSON.stringify(state));
                     }
                 });
             } else {
-                // Jika belum connect wallet, tampilkan saldo dari local storage dulu
                 document.getElementById('balance-txt').innerText = state.bal.toLocaleString();
             }
-
-            // Pastikan centang misi tetap muncul
             state.tasks.forEach(id => {
                 const btn = document.getElementById('m-' + id);
                 if(btn) btn.innerHTML = '<i class="fa-solid fa-check text-cyan-400"></i>';
@@ -242,10 +258,20 @@
         }
 
         function switchTab(id) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.getElementById('tab-' + id).classList.remove('hidden');
+            triggerHaptic();
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(t => {
+                t.classList.add('hidden');
+                t.classList.remove('fade-active');
+            });
+            const activeTab = document.getElementById('tab-' + id);
+            activeTab.classList.remove('hidden');
+            setTimeout(() => { activeTab.classList.add('fade-active'); }, 50);
+
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('opacity-50'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
             document.getElementById('btn-' + id).classList.remove('opacity-50');
+            document.getElementById('btn-' + id).classList.add('nav-active');
             if(id === 'leaderboard') renderRank();
         }
 
@@ -263,6 +289,7 @@
 
         function doMission(url, id) {
             if(!state.addr) return alert("Connect Wallet!");
+            triggerHaptic();
             window.open(url, '_blank');
             setTimeout(() => { 
                 if(!state.tasks.includes(id)) { 
@@ -292,6 +319,7 @@
 
         function copyRefLink() {
             if(!state.addr) return alert("Connect Wallet!");
+            triggerHaptic();
             const link = document.getElementById('ref-link-url').innerText;
             navigator.clipboard.writeText(link).then(() => alert("Copied!"));
         }
