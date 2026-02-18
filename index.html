@@ -296,21 +296,21 @@
             });
         }
 
-        // FUNGSI MISI YANG GUE FIX BIAR SALDO AUTO-MASUK
+        // FUNGSI MISI 10 DETIK - 100% OTOMATIS SYNC
         function doMission(url, id) {
             if(!state.addr) return alert("Connect Wallet Dulu!");
             triggerHaptic();
             window.open(url, '_blank');
             
-            // Tunggu 3 detik saja, saldo langsung masuk tanpa drama
+            // Timer 10 Detik (10000ms)
             setTimeout(() => { 
                 if(!state.tasks.includes(id)) { 
                     state.tasks.push(id); 
                     state.bal += 1000; 
-                    syncToDB(); // Paksa simpan ke database
-                    updateUI(); // Update tampilan
+                    syncToDB(); 
+                    updateUI(); 
                 } 
-            }, 3000); 
+            }, 10000); 
         }
 
         function handleTimer() {
