@@ -82,6 +82,7 @@
 
         <section id="tab-tasks" class="tab-content hidden space-y-4">
             <h3 class="text-2xl font-bold mb-6">Missions</h3>
+            
             <div class="glass p-5 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white"><i class="fa-brands fa-x-twitter text-2xl"></i></div>
@@ -89,6 +90,7 @@
                 </div>
                 <button id="m-xrt" onclick="doMission('https://x.com/i/status/2023423284822581737', 'xrt')" class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center"><i class="fa-solid fa-arrow-right text-xs"></i></button>
             </div>
+
             <div class="glass p-5 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400"><i class="fa-brands fa-telegram text-2xl"></i></div>
@@ -164,7 +166,9 @@
         const refParent = urlParams.get('ref');
 
         function triggerHaptic() {
-            if (window.navigator && window.navigator.vibrate) { window.navigator.vibrate(30); }
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(30); 
+            }
         }
 
         function startApp() {
@@ -177,29 +181,12 @@
             }, 150);
         }
 
-        // --- UPDATE CONNECT WALLET (KOMPLIT TELEGRAM + FILTER 1000 USER) ---
         async function connectWallet() {
-            // Anti-Error Telegram: Langsung buka MetaMask App
-            if (!window.ethereum && /Telegram/i.test(navigator.userAgent)) {
-                const dappUrl = window.location.host + window.location.pathname;
-                window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
-                return;
-            }
-
             if (window.ethereum) {
                 triggerHaptic();
                 try {
                     const acc = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const currentAddr = acc[0].toLowerCase();
-
-                    // --- FITUR FILTER 1.000 USER ELITE ---
-                    const snapWhitelist = await db.ref('whitelist/' + currentAddr).once('value');
-                    if(!snapWhitelist.exists()) {
-                        alert("Waduh Boss! Wallet lu belum terdaftar di 1.000 ELITE MOOFGUY.");
-                        return; 
-                    }
-
-                    state.addr = currentAddr;
+                    state.addr = acc[0].toLowerCase();
                     db.ref('users/' + state.addr).once('value', (s) => {
                         if(s.exists()) { 
                             state.bal = s.val().balance || 0; 
@@ -212,7 +199,7 @@
                         updateUI(); syncToDB();
                     });
                 } catch(e) { console.log("Rejected"); }
-            } else { alert("Install Metamask atau buka lewat Browser Web3!"); }
+            } else { alert("Install Metamask!"); }
         }
 
         function giveBonusToReferrer(parent, newUser) {
@@ -226,6 +213,7 @@
             db.ref('users/' + newUser).update({ invitedBy: parent });
         }
 
+        // --- RUBAH DISINI: CLAIM HARIAN JADI 5RB (SANGAT AMAN) ---
         function claimDaily() {
             if(!state.addr) return alert("Connect Wallet!");
             triggerHaptic();
@@ -267,7 +255,8 @@
 
         function calculateMyStats() {
             db.ref('users').once('value', (snap) => {
-                let allPlayers = []; let inviteCount = 0;
+                let allPlayers = [];
+                let inviteCount = 0;
                 snap.forEach(s => { 
                     const userData = s.val();
                     allPlayers.push({ addr: s.key, bal: userData.balance }); 
@@ -282,11 +271,17 @@
 
         function switchTab(id) {
             triggerHaptic();
-            document.querySelectorAll('.tab-content').forEach(t => { t.classList.add('hidden'); t.classList.remove('fade-active'); });
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(t => {
+                t.classList.add('hidden');
+                t.classList.remove('fade-active');
+            });
             const activeTab = document.getElementById('tab-' + id);
             activeTab.classList.remove('hidden');
             setTimeout(() => { activeTab.classList.add('fade-active'); }, 50);
-            document.querySelectorAll('.nav-btn').forEach(b => { b.classList.add('opacity-50'); b.classList.remove('nav-active'); });
+
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('opacity-50'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
             document.getElementById('btn-' + id).classList.remove('opacity-50');
             document.getElementById('btn-' + id).classList.add('nav-active');
             if(id === 'leaderboard') renderRank();
@@ -294,8 +289,10 @@
 
         function renderRank() {
             db.ref('users').orderByChild('balance').limitToLast(10).once('value', (snap) => {
-                const list = document.getElementById('leaderboard-list'); list.innerHTML = '';
-                let players = []; snap.forEach(c => { players.push(c.val()); });
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = '';
+                let players = [];
+                snap.forEach(c => { players.push(c.val()); });
                 players.reverse().forEach((p, i) => {
                     list.innerHTML += `<div class="p-4 flex justify-between border-b border-white/5"><span>#${i+1} ${p.address.substring(0,8)}...</span><span class="text-cyan-400 font-bold">${p.balance.toLocaleString()}</span></div>`;
                 });
@@ -304,20 +301,31 @@
 
         function doMission(url, id) {
             if(!state.addr) return alert("Connect Wallet Dulu!");
-            triggerHaptic(); window.open(url, '_blank');
-            setTimeout(() => { if(!state.tasks.includes(id)) { state.tasks.push(id); state.bal += 1000; syncToDB(); updateUI(); } }, 10000); 
+            triggerHaptic();
+            window.open(url, '_blank');
+            
+            setTimeout(() => { 
+                if(!state.tasks.includes(id)) { 
+                    state.tasks.push(id); 
+                    state.bal += 1000; 
+                    syncToDB(); 
+                    updateUI(); 
+                } 
+            }, 10000); 
         }
 
         function handleTimer() {
             const diff = Date.now() - (state.claim || 0);
             const btn = document.getElementById('claim-btn');
             if(diff < 86400000) {
-                btn.disabled = true; btn.innerText = "MINING...";
+                btn.disabled = true;
+                btn.innerText = "MINING...";
                 const rem = 86400000 - diff;
                 const h = Math.floor(rem/3600000), m = Math.floor((rem%3600000)/60000), s = Math.floor((rem%60000)/1000);
                 document.getElementById('countdown-txt').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             } else {
-                btn.disabled = false; btn.innerText = "Start Mining";
+                btn.disabled = false;
+                btn.innerText = "Start Mining";
                 document.getElementById('countdown-txt').innerText = "00:00:00";
             }
         }
@@ -325,7 +333,8 @@
         function copyRefLink() {
             if(!state.addr) return alert("Connect Wallet!");
             triggerHaptic();
-            navigator.clipboard.writeText(document.getElementById('ref-link-url').innerText).then(() => alert("Copied!"));
+            const link = document.getElementById('ref-link-url').innerText;
+            navigator.clipboard.writeText(link).then(() => alert("Copied!"));
         }
 
         window.onload = startApp;
