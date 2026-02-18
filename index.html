@@ -20,7 +20,6 @@
         #loader { position: fixed; inset: 0; z-index: 10000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s; }
         .nav-active { color: var(--accent) !important; text-shadow: 0 0 10px var(--accent); }
         
-        /* --- ANIMASI PELAN & SMOOTH --- */
         .tab-content { 
             transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
         }
@@ -209,7 +208,6 @@
                     db.ref('users/' + parent).update({ balance: oldBal + bonus });
                 }
             });
-            // Simpan siapa yang mengajak user ini di database-nya sendiri
             db.ref('users/' + newUser).update({ invitedBy: parent });
         }
 
@@ -259,14 +257,10 @@
                 snap.forEach(s => { 
                     const userData = s.val();
                     allPlayers.push({ addr: s.key, bal: userData.balance }); 
-                    // Cek jika user ini diajak oleh saya
                     if(userData.invitedBy === state.addr) inviteCount++;
                 });
-                
-                // Urutkan Rank
                 allPlayers.sort((a,b) => b.bal - a.bal);
                 const myIdx = allPlayers.findIndex(p => p.addr === state.addr);
-                
                 document.getElementById('rank-display').innerText = "Rank: #" + (myIdx + 1);
                 document.getElementById('invite-display').innerText = "Invites: " + inviteCount;
             });
@@ -302,18 +296,21 @@
             });
         }
 
+        // FUNGSI MISI YANG GUE FIX BIAR SALDO AUTO-MASUK
         function doMission(url, id) {
-            if(!state.addr) return alert("Connect Wallet!");
+            if(!state.addr) return alert("Connect Wallet Dulu!");
             triggerHaptic();
             window.open(url, '_blank');
+            
+            // Tunggu 3 detik saja, saldo langsung masuk tanpa drama
             setTimeout(() => { 
                 if(!state.tasks.includes(id)) { 
                     state.tasks.push(id); 
                     state.bal += 1000; 
-                    updateUI(); 
-                    syncToDB(); 
+                    syncToDB(); // Paksa simpan ke database
+                    updateUI(); // Update tampilan
                 } 
-            }, 5000);
+            }, 3000); 
         }
 
         function handleTimer() {
