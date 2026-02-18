@@ -125,7 +125,10 @@
                 <div class="w-20 h-20 bg-white/5 rounded-full mx-auto flex items-center justify-center mb-4"><i class="fa-solid fa-user-astronaut text-3xl opacity-50"></i></div>
                 <h4 id="user-display" class="font-bold text-xl uppercase">Anonymous</h4>
                 <p id="addr-txt" class="text-[10px] opacity-30 font-mono mb-2">Disconnected</p>
-                <div id="rank-display" class="inline-block px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Your Rank: Loading...</div>
+                <div class="flex justify-center gap-2">
+                    <div id="rank-display" class="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Rank: #--</div>
+                    <div id="invite-display" class="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-white font-bold uppercase tracking-widest">Invites: 0</div>
+                </div>
             </div>
             <div class="glass p-6 space-y-4">
                 <p class="text-[10px] font-bold uppercase opacity-40">Referral Link</p>
@@ -189,7 +192,7 @@
                             state.tasks = s.val().tasks || []; 
                         } else {
                             if(refParent && refParent.toLowerCase() !== state.addr) {
-                                giveBonusToReferrer(refParent.toLowerCase());
+                                giveBonusToReferrer(refParent.toLowerCase(), state.addr);
                             }
                         }
                         updateUI(); syncToDB();
@@ -198,7 +201,7 @@
             } else { alert("Install Metamask!"); }
         }
 
-        function giveBonusToReferrer(parent) {
+        function giveBonusToReferrer(parent, newUser) {
             const bonus = 500; 
             db.ref('users/' + parent).once('value', (s) => {
                 if(s.exists()) {
@@ -206,6 +209,8 @@
                     db.ref('users/' + parent).update({ balance: oldBal + bonus });
                 }
             });
+            // Simpan siapa yang mengajak user ini di database-nya sendiri
+            db.ref('users/' + newUser).update({ invitedBy: parent });
         }
 
         function claimDaily() {
@@ -234,7 +239,7 @@
                         document.getElementById('addr-txt').innerText = state.addr;
                         document.getElementById('user-display').innerText = "USER";
                         document.getElementById('ref-link-url').innerText = window.location.origin + window.location.pathname + "?ref=" + state.addr;
-                        calculateMyRank();
+                        calculateMyStats();
                         localStorage.setItem(APP_KEY, JSON.stringify(state));
                     }
                 });
@@ -247,13 +252,23 @@
             });
         }
 
-        function calculateMyRank() {
-            db.ref('users').orderByChild('balance').once('value', (snap) => {
+        function calculateMyStats() {
+            db.ref('users').once('value', (snap) => {
                 let allPlayers = [];
-                snap.forEach(s => { allPlayers.push({ addr: s.key, bal: s.val().balance }); });
+                let inviteCount = 0;
+                snap.forEach(s => { 
+                    const userData = s.val();
+                    allPlayers.push({ addr: s.key, bal: userData.balance }); 
+                    // Cek jika user ini diajak oleh saya
+                    if(userData.invitedBy === state.addr) inviteCount++;
+                });
+                
+                // Urutkan Rank
                 allPlayers.sort((a,b) => b.bal - a.bal);
                 const myIdx = allPlayers.findIndex(p => p.addr === state.addr);
-                document.getElementById('rank-display').innerText = "Your Rank: #" + (myIdx + 1);
+                
+                document.getElementById('rank-display').innerText = "Rank: #" + (myIdx + 1);
+                document.getElementById('invite-display').innerText = "Invites: " + inviteCount;
             });
         }
 
